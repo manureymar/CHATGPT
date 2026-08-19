@@ -1,0 +1,47 @@
+name: Android 16 Runtime Diagnostics
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  android-16-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm || true
+      - name: Build APK
+        run: gradle --no-daemon clean assembleDebug
+      - name: Android 16 launch test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set +e
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am force-stop com.manureymar.ridgerush
+            adb shell monkey -p com.manureymar.ridgerush -c android.intent.category.LAUNCHER 1
+            sleep 6
+            echo '=== PID ==='
+            adb shell pidof com.manureymar.ridgerush || true
+            echo '=== CRASH LOGS ==='
+            adb logcat -d -v threadtime | grep -E 'AndroidRuntime|FATAL EXCEPTION|Process: com.manureymar.ridgerush|Caused by:|MainActivity|GameView' | tail -n 350 || true
+            if ! adb shell pidof com.manureymar.ridgerush >/dev/null; then
+              exit 1
+            fi

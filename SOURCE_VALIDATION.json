@@ -1,0 +1,9 @@
+{
+  "manifest_exists": true,
+  "no_webview": true,
+  "five_levels": true,
+  "target_36": true,
+  "compile_36": true,
+  "package": true,
+  "launcher_activity": true
+}

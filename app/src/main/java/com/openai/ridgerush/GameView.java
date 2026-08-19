@@ -22,8 +22,7 @@ public final class GameView extends View implements Runnable {
     private final int[] skyBottom = {0xffd9f3ff,0xffffe3a8,0xffedf8ff,0xff8155d9,0xff3b245e};
     private final int[] ground = {0xff4d7a3b,0xffb36b3d,0xff96aabd,0xff34556a,0xff62657a};
 
-    private volatile boolean running;
-    private Thread loop;
+    private boolean running;
     private long lastNs;
     private Screen screen = Screen.MENU;
     private int level = 0;
@@ -42,29 +41,29 @@ public final class GameView extends View implements Runnable {
         totalCoins = prefs.getInt("coins", 0);
     }
 
-    public synchronized void resumeGame() {
+    public void resumeGame() {
         if (running) return;
         running = true;
         lastNs = System.nanoTime();
-        loop = new Thread(this, "RidgeRushLoop");
-        loop.start();
+        removeCallbacks(this);
+        postOnAnimation(this);
     }
 
-    public synchronized void pauseGame() {
+    public void pauseGame() {
         running = false;
         gas = false;
         brake = false;
+        removeCallbacks(this);
     }
 
     @Override public void run() {
-        while (running) {
-            long now = System.nanoTime();
-            float dt = Math.min(0.033f, (now - lastNs) / 1_000_000_000f);
-            lastNs = now;
-            if (screen == Screen.GAME) update(dt);
-            postInvalidateOnAnimation();
-            try { Thread.sleep(10); } catch (InterruptedException ignored) { return; }
-        }
+        if (!running) return;
+        long now = System.nanoTime();
+        float dt = Math.min(0.033f, Math.max(0f, (now - lastNs) / 1_000_000_000f));
+        lastNs = now;
+        if (screen == Screen.GAME) update(dt);
+        invalidate();
+        postOnAnimation(this);
     }
 
     private void startLevel(int index) {
@@ -171,6 +170,10 @@ public final class GameView extends View implements Runnable {
     }
 
     private void background(Canvas c, int top, int bottom) {
+        if (getHeight() <= 0 || getWidth() <= 0) {
+            c.drawColor(top);
+            return;
+        }
         p.setShader(new LinearGradient(0,0,0,getHeight(),top,bottom, Shader.TileMode.CLAMP));
         c.drawRect(0,0,getWidth(),getHeight(),p);
         p.setShader(null);

@@ -17,9 +17,6 @@ public final class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Install the decor/content view before requesting WindowInsetsController.
-        // Calling PhoneWindow#getInsetsController before DecorView exists crashes
-        // on current Android versions (observed on API 35 and Samsung devices).
         gameView = new GameView(this);
         setContentView(gameView);
         enterImmersiveMode();
@@ -42,7 +39,7 @@ public final class MainActivity extends Activity {
         }
     }
 
-    @Override protected void onWindowFocusChanged(boolean hasFocus) {
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) enterImmersiveMode();
     }

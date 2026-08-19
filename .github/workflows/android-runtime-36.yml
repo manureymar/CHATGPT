@@ -32,16 +32,12 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            set +e
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am force-stop com.manureymar.ridgerush
             adb shell monkey -p com.manureymar.ridgerush -c android.intent.category.LAUNCHER 1
             sleep 6
             echo '=== PID ==='
-            adb shell pidof com.manureymar.ridgerush || true
+            adb shell pidof com.manureymar.ridgerush
             echo '=== CRASH LOGS ==='
             adb logcat -d -v threadtime | grep -E 'AndroidRuntime|FATAL EXCEPTION|Process: com.manureymar.ridgerush|Caused by:|MainActivity|GameView' | tail -n 350 || true
-            if ! adb shell pidof com.manureymar.ridgerush >/dev/null; then
-              exit 1
-            fi
